@@ -249,7 +249,7 @@ class MJCar:
         mj.mjv_moveCamera(model, action, dx/height,
                           dy/height, scene, cam)
 
-    def scroll(self, xoffset, yoffset):
+    def scroll(self, window, xoffset, yoffset):
         action = mj.mjtMouse.mjMOUSE_ZOOM
         model = self.model
         scene = self.scene
@@ -318,7 +318,7 @@ class MJCar:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--xml-file", default="democar.xml")
+    parser.add_argument("--xml-file", default="car.xml")
     parser.add_argument("--meshdir")
     args = parser.parse_args()
     sim = MJCar(args.xml_file)
