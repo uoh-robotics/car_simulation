@@ -23,9 +23,9 @@ class MJCar:
         self.print_camera_config = 0
 
         # For callback functions
-        self.button_left = False
-        self.button_middle = False
-        self.button_right = False
+        self.button_left_pressed = False
+        self.button_middle_pressed = False
+        self.button_right_pressed = False
         self.lastx = 0
         self.lasty = 0
         self.velocity = 5
@@ -95,7 +95,7 @@ class MJCar:
         pos = self.ov_positions[pos]
         mj.mjr_overlay(font, pos, self.viewport, text1, text2, self.context)
 
-    def default_overlay(self):
+    def add_default_overlay(self):
         self.add_overlay("bottomleft",
                          "\n".join(["Restart: r", "Start: s", f"Time: {self.data.time}"]),
                          None)
@@ -165,7 +165,7 @@ class MJCar:
             _joints = not _joints
             viewport.flags[mj.mjtVisFlag.mjVIS_JOINT] = _joints
 
-        if (glfw.MOD_CONTROL and key == glfw.KEY_C) or glfw.KEY_Q:
+        if (glfw.MOD_CONTROL and key == glfw.KEY_C) or key == glfw.KEY_Q:
             self.stop_simulation = True
 
     def init_controller(self, model, data):
@@ -188,39 +188,45 @@ class MJCar:
 
     def mouse_button(self, window, button, act, mods):
         # update button state
-        button_left = self.button_left
-        button_middle = self.button_middle
-        button_right = self.button_right
+        button_left_pressed = self.button_left_pressed
+        button_middle_pressed = self.button_middle_pressed
+        button_right_pressed = self.button_right_pressed
 
-        button_left = (glfw.get_mouse_button(
+        self.button_left_pressed = (glfw.get_mouse_button(
             window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS)
-        button_middle = (glfw.get_mouse_button(
+        self.button_middle_pressed = (glfw.get_mouse_button(
             window, glfw.MOUSE_BUTTON_MIDDLE) == glfw.PRESS)
-        button_right = (glfw.get_mouse_button(
+        self.button_right_pressed = (glfw.get_mouse_button(
             window, glfw.MOUSE_BUTTON_RIGHT) == glfw.PRESS)
 
         # update mouse position
         glfw.get_cursor_pos(window)
 
-    def mouse_move(self, window, xpos, ypos):
-        # compute mouse displacement, save
+    def compute_xy_and_update(self, xpos, ypos):
         lastx = self.lastx
         lasty = self.lasty
-        button_left = self.button_left
-        button_middle = self.button_middle
-        button_right = self.button_right
+        dx = xpos - lastx
+        dy = ypos - lasty
+        self.lastx = xpos
+        self.lasty = ypos
+        return dx, dy
+
+    def mouse_move(self, window, xpos, ypos):
+        # compute mouse displacement, save
+        button_left_pressed = self.button_left_pressed
+        button_middle_pressed = self.button_middle_pressed
+        button_right_pressed = self.button_right_pressed
         model = self.model
         scene = self.scene
         cam = self.camera
 
-        dx = xpos - lastx
-        dy = ypos - lasty
-        lastx = xpos
-        lasty = ypos
+        dx, dy = self.compute_xy_and_update(xpos, ypos)
 
         # no buttons down: nothing to do
-        if (not button_left) and (not button_middle) and (not button_right):
+        if not any([button_left_pressed, button_middle_pressed, button_right_pressed]):
             return
+
+        print(xpos, ypos, button_left_pressed, button_middle_pressed, button_right_pressed)
 
         # get current window size
         width, height = glfw.get_window_size(window)
@@ -233,12 +239,12 @@ class MJCar:
         mod_shift = (PRESS_LEFT_SHIFT or PRESS_RIGHT_SHIFT)
 
         # determine action based on mouse button
-        if button_right:
+        if button_right_pressed:
             if mod_shift:
                 action = mj.mjtMouse.mjMOUSE_MOVE_H
             else:
                 action = mj.mjtMouse.mjMOUSE_MOVE_V
-        elif button_left:
+        elif button_left_pressed:
             if mod_shift:
                 action = mj.mjtMouse.mjMOUSE_ROTATE_H
             else:
@@ -249,13 +255,10 @@ class MJCar:
         mj.mjv_moveCamera(model, action, dx/height,
                           dy/height, scene, cam)
 
-    def scroll(self, xoffset, yoffset):
+    def scroll(self, window, xoffset, yoffset):
         action = mj.mjtMouse.mjMOUSE_ZOOM
-        model = self.model
-        scene = self.scene
-        cam = self.camera
-        mj.mjv_moveCamera(model, action, 0.0, -0.05 *
-                          yoffset, scene, cam)
+        mj.mjv_moveCamera(self.model, action, 0.0, -0.05 *
+                          yoffset, self.scene, self.camera)
 
     def start(self):
         self._init_vars()
@@ -305,7 +308,7 @@ class MJCar:
                                mj.mjtCatBit.mjCAT_ALL.value, self.scene)
             mj.mjr_render(self.viewport, self.scene, self.context)
 
-            self.default_overlay()
+            self.add_default_overlay()
 
             # swap OpenGL buffers (blocking call due to v-sync)
             glfw.swap_buffers(window)
