@@ -249,7 +249,7 @@ class MJCar:
         mj.mjv_moveCamera(model, action, dx/height,
                           dy/height, scene, cam)
 
-    def scroll(self, xoffset, yoffset):
+    def scroll(self, window, xoffset, yoffset):
         action = mj.mjtMouse.mjMOUSE_ZOOM
         model = self.model
         scene = self.scene
