@@ -321,7 +321,7 @@ class MJCar:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--xml-file", default="democar.xml")
+    parser.add_argument("--xml-file", default="car.xml")
     parser.add_argument("--meshdir")
     args = parser.parse_args()
     sim = MJCar(args.xml_file)
